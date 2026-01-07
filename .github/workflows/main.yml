@@ -22,16 +22,18 @@ jobs:
       run: |
         go install github.com/fyne-io/fyne-cross@latest
 
-    - name: Build binaries
+    - name: Build linux binaries
       run: |
-        fyne-cross linux \
-          --arch amd64 --output "multiUploader-linux-amd64"
-        fyne-cross windows \
-          --arch amd64 --output "multiUploader-windows-amd64.exe"
-        fyne-cross darwin \
-          --arch arm64 --output "multiUploader-macos-arm64"
-        fyne-cross darwin \
-          --arch amd64 --output "multiUploader-macos-amd64"
+        fyne-cross linux --arch amd64 --output "multiUploader-linux-amd64"
+
+    - name: Build windows binaries
+      run: |
+        fyne-cross windows --arch amd64 --output "multiUploader-windows-amd64.exe"
+
+#    - name: Build macos binaries
+#      run: |
+#        fyne-cross darwin --arch arm64 --output "multiUploader-macos-arm64"
+#        fyne-cross darwin --arch amd64 --output "multiUploader-macos-amd64"
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
