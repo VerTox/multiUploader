@@ -8,7 +8,8 @@ import (
 	"io"
 	"net/http"
 	"strings"
-	"time"
+
+	"multiUploader/internal/httpclient"
 )
 
 const (
@@ -82,8 +83,7 @@ func (r *RootzProvider) uploadSmallFile(ctx context.Context, file io.Reader, fil
 	}
 
 	// Отправляем запрос
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	resp, err := httpclient.Default().Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -290,8 +290,7 @@ func (r *RootzProvider) uploadPartWithProgress(ctx context.Context, url string, 
 
 	req.ContentLength = partSize
 
-	client := &http.Client{Timeout: 10 * time.Minute}
-	resp, err := client.Do(req)
+	resp, err := httpclient.LongLived().Do(req)
 	if err != nil {
 		return "", err
 	}
@@ -339,8 +338,7 @@ func (r *RootzProvider) makeJSONRequest(ctx context.Context, method, path string
 		req.Header.Set("Authorization", "Bearer "+r.apiKey)
 	}
 
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	resp, err := httpclient.Default().Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -372,8 +370,7 @@ func (r *RootzProvider) makeJSONRequestNoAuth(ctx context.Context, method, path 
 
 	req.Header.Set("Content-Type", "application/json")
 
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	resp, err := httpclient.Default().Do(req)
 	if err != nil {
 		return nil, err
 	}

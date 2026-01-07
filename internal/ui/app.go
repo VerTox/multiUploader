@@ -1,11 +1,17 @@
 package ui
 
 import (
+	"os"
+	"os/exec"
+	"runtime"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/theme"
 
 	"multiUploader/internal/config"
+	"multiUploader/internal/logging"
 	"multiUploader/internal/providers"
 )
 
@@ -70,6 +76,9 @@ func (a *App) GetEnabledProviders() []providers.Provider {
 
 // Build создает UI приложения
 func (a *App) Build() {
+	// Создаем меню
+	a.mainWindow.SetMainMenu(a.buildMenu())
+
 	// Создаем вкладки
 	a.uploadTab = NewUploadTab(a)
 	a.settingsTab = NewSettingsTab(a)
@@ -115,5 +124,73 @@ func (a *App) ApplyTheme() {
 	default:
 		// "auto" или пустая строка - используем системную тему по умолчанию
 		a.fyneApp.Settings().SetTheme(theme.DefaultTheme())
+	}
+}
+
+// buildMenu создает главное меню приложения
+func (a *App) buildMenu() *fyne.MainMenu {
+	// File menu
+	openLogsItem := fyne.NewMenuItem("Open Logs Folder", func() {
+		a.openLogsFolder()
+	})
+
+	fileMenu := fyne.NewMenu("File",
+		openLogsItem,
+		fyne.NewMenuItemSeparator(),
+		fyne.NewMenuItem("Quit", func() {
+			a.fyneApp.Quit()
+		}),
+	)
+
+	// Help menu
+	//aboutItem := fyne.NewMenuItem("About", func() {
+	//	dialog.ShowInformation("About multiUploader",
+	//		"multiUploader v1.0.0\n\nA cross-platform file uploader for multiple hosting services.",
+	//		a.mainWindow)
+	//})
+
+	//helpMenu := fyne.NewMenu("Help", aboutItem)
+
+	return fyne.NewMainMenu(fileMenu)
+}
+
+// openLogsFolder открывает папку с логами в файловом менеджере (кроссплатформенно)
+func (a *App) openLogsFolder() {
+	logDir := logging.GetLogDir()
+	if logDir == "" {
+		dialog.ShowInformation("Logs Not Found",
+			"Could not determine logs location.",
+			a.mainWindow)
+		return
+	}
+
+	// Проверяем что директория существует
+	if _, err := os.Stat(logDir); os.IsNotExist(err) {
+		// Пытаемся создать
+		if err := os.MkdirAll(logDir, 0755); err != nil {
+			dialog.ShowInformation("Error",
+				"Could not create logs directory:\n"+err.Error(),
+				a.mainWindow)
+			return
+		}
+	}
+
+	var cmd *exec.Cmd
+
+	switch runtime.GOOS {
+	case "darwin": // macOS
+		cmd = exec.Command("open", logDir)
+	case "windows":
+		cmd = exec.Command("explorer", logDir)
+	default: // Linux и другие
+		// Пробуем xdg-open (работает на большинстве Linux DE)
+		cmd = exec.Command("xdg-open", logDir)
+	}
+
+	if err := cmd.Start(); err != nil {
+		// Если не удалось открыть, показываем путь
+		dialog.ShowInformation("Logs Location",
+			"Could not open folder automatically.\n\nLogs are located at:\n"+logDir,
+			a.mainWindow)
 	}
 }

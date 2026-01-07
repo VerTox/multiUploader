@@ -10,6 +10,8 @@ import (
 	"net/http"
 	"net/url"
 	"time"
+
+	"multiUploader/internal/httpclient"
 )
 
 const (
@@ -88,8 +90,7 @@ func (f *FileKeeperProvider) getUploadServer(ctx context.Context) (*filekeeperSe
 		return nil, err
 	}
 
-	client := &http.Client{Timeout: 30 * time.Second}
-	resp, err := client.Do(req)
+	resp, err := httpclient.Default().Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -225,9 +226,7 @@ func (f *FileKeeperProvider) uploadFile(ctx context.Context, serverData *filekee
 		}
 	}()
 
-	client := &http.Client{Timeout: 0}
-
-	resp, reqErr := client.Do(req)
+	resp, reqErr := httpclient.LongLived().Do(req)
 	_ = pipeR.Close()
 	if reqErr != nil {
 		if errors.Is(reqErr, context.Canceled) {

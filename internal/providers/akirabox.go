@@ -10,7 +10,8 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
-	"time"
+
+	"multiUploader/internal/httpclient"
 )
 
 const (
@@ -97,8 +98,7 @@ func (a *AkiraBoxProvider) startUpload(ctx context.Context, filename string, fil
 	}
 	req.Header.Set("Accept", "application/json")
 
-	client := &http.Client{Timeout: 30 * time.Second}
-	resp, err := client.Do(req)
+	resp, err := httpclient.Default().Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -142,8 +142,7 @@ func (a *AkiraBoxProvider) getChunkURL(ctx context.Context, startData *startUplo
 	}
 	req.Header.Set("Accept", "application/json")
 
-	client := &http.Client{Timeout: 30 * time.Second}
-	resp, err := client.Do(req)
+	resp, err := httpclient.Default().Do(req)
 	if err != nil {
 		return "", err
 	}
@@ -254,8 +253,7 @@ func (a *AkiraBoxProvider) uploadPartWithProgress(ctx context.Context, uploadURL
 	req.ContentLength = partSize
 	req.Header.Set("Content-Type", "application/octet-stream")
 
-	client := &http.Client{Timeout: 10 * time.Minute}
-	resp, err := client.Do(req)
+	resp, err := httpclient.LongLived().Do(req)
 	if err != nil {
 		return "", err
 	}
@@ -304,8 +302,7 @@ func (a *AkiraBoxProvider) completeUpload(ctx context.Context, startData *startU
 	}
 	req.Header.Set("Content-Type", "application/json")
 
-	client := &http.Client{Timeout: 30 * time.Second}
-	resp, err := client.Do(req)
+	resp, err := httpclient.Default().Do(req)
 	if err != nil {
 		return "", err
 	}

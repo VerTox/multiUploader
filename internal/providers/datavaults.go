@@ -10,6 +10,8 @@ import (
 	"net/http"
 	"net/url"
 	"time"
+
+	"multiUploader/internal/httpclient"
 )
 
 const (
@@ -49,8 +51,12 @@ func (d DataVaults) Upload(ctx context.Context, file io.ReadSeeker, filename str
 	}
 	curl.Path = selectServerPostfix
 	curl.RawQuery = url.Values{"key": []string{d.ApiKey}}.Encode()
-	client := http.Client{}
-	resp, err := client.Get(curl.String())
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, curl.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := httpclient.Default().Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -109,13 +115,13 @@ func (d DataVaults) Upload(ctx context.Context, file io.ReadSeeker, filename str
 		}
 	}()
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, response.Result, pipeR)
+	req2, err := http.NewRequestWithContext(ctx, http.MethodPost, response.Result, pipeR)
 	if err != nil {
 		_ = pipeR.Close()
 		_ = pipeW.Close()
 		return nil, err
 	}
-	req.Header.Set("Content-Type", mw.FormDataContentType())
+	req2.Header.Set("Content-Type", mw.FormDataContentType())
 
 	stopProgress := make(chan struct{})
 	defer close(stopProgress)
@@ -174,9 +180,7 @@ func (d DataVaults) Upload(ctx context.Context, file io.ReadSeeker, filename str
 		}
 	}()
 
-	client.Timeout = 0
-
-	resp, reqErr := client.Do(req)
+	resp, reqErr := httpclient.LongLived().Do(req2)
 	_ = pipeR.Close()
 	if reqErr != nil {
 		if errors.Is(reqErr, context.Canceled) {

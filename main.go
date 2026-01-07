@@ -3,11 +3,19 @@ package main
 import (
 	"fyne.io/fyne/v2/app"
 
+	"multiUploader/internal/logging"
 	"multiUploader/internal/providers"
 	"multiUploader/internal/ui"
 )
 
 func main() {
+	// Инициализируем логгер (пишет только errors в файл)
+	if err := logging.Init(); err != nil {
+		// Если не удалось инициализировать логгер, просто продолжаем
+		// (приложение может работать без логов)
+	}
+	defer logging.Close()
+
 	// Создаем Fyne приложение с уникальным ID для хранения настроек
 	fyneApp := app.NewWithID("com.github.vertox.multiuploader")
 

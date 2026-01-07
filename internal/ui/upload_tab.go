@@ -14,6 +14,7 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
+	"multiUploader/internal/logging"
 	"multiUploader/internal/providers"
 )
 
@@ -170,9 +171,10 @@ func (t *UploadTab) updateProviderList() {
 
 // onSelectFile обработчик выбора файла
 func (t *UploadTab) onSelectFile() {
-	dialog.ShowFileOpen(func(reader fyne.URIReadCloser, err error) {
+	// Создаем file dialog вручную, чтобы установить custom размер
+	fileDialog := dialog.NewFileOpen(func(reader fyne.URIReadCloser, err error) {
 		if err != nil {
-			dialog.ShowError(err, t.app.MainWindow())
+			t.showFriendlyError(err)
 			return
 		}
 		if reader == nil {
@@ -193,6 +195,10 @@ func (t *UploadTab) onSelectFile() {
 
 		t.updateUploadButton()
 	}, t.app.MainWindow())
+
+	// Устанавливаем больший размер для удобства
+	fileDialog.Resize(fyne.NewSize(800, 600))
+	fileDialog.Show()
 }
 
 // onUpload обработчик загрузки файла
@@ -370,8 +376,16 @@ func (t *UploadTab) finishUpload(err error) {
 	t.progressMutex.Unlock()
 
 	if err != nil {
-		// dialog должен быть потокобезопасным
-		dialog.ShowError(err, t.app.MainWindow())
+		// Логируем ошибку с контекстом
+		logging.ErrorWithError("Upload failed",
+			err,
+			"provider", t.selectedProvider,
+			"filename", t.selectedFile.Name(),
+			"filesize", t.totalSize,
+		)
+
+		// Показываем дружественное сообщение об ошибке
+		t.showFriendlyError(err)
 	}
 
 	fyne.Do(func() {
@@ -470,4 +484,22 @@ func (t *UploadTab) updateUploadButton() {
 func (t *UploadTab) Refresh() {
 	t.updateProviderList()
 	t.updateUploadButton()
+}
+
+// showFriendlyError показывает дружественное сообщение об ошибке
+func (t *UploadTab) showFriendlyError(err error) {
+	if err == nil {
+		return
+	}
+
+	friendlyErr := MakeFriendly(err)
+	message := FormatErrorMessage(friendlyErr)
+
+	// Показываем custom dialog с понятным сообщением
+	content := widget.NewLabel(message)
+	content.Wrapping = fyne.TextWrapWord
+
+	d := dialog.NewCustom(friendlyErr.Title, "OK", content, t.app.MainWindow())
+	d.Resize(fyne.NewSize(500, 200))
+	d.Show()
 }
