@@ -25,16 +25,16 @@ jobs:
     - name: Build binaries
       run: |
         fyne-cross linux \
-          --arch amd64 --output "build/app-linux-amd64"
+          --arch amd64 --output "multiUploader-linux-amd64"
         fyne-cross windows \
-          --arch amd64 --output "build/app-windows-amd64.exe"
+          --arch amd64 --output "multiUploader-windows-amd64.exe"
         fyne-cross darwin \
-          --arch arm64 --output "build/app-macos-arm64"
+          --arch arm64 --output "multiUploader-macos-arm64"
         fyne-cross darwin \
-          --arch amd64 --output "build/app-macos-amd64"
+          --arch amd64 --output "multiUploader-macos-amd64"
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
       with:
         name: app-binaries
-        path: build/
+        path: fyne-cross/dist/
