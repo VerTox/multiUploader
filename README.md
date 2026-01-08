@@ -2,7 +2,7 @@
 
 > A cross-platform GUI application for uploading files to multiple file hosting services with built-in retry mechanism and progress tracking.
 
-[![Go Version](https://img.shields.io/badge/Go-1.25%2B-blue)](https://golang.org/)
+[![Go Version](https://img.shields.io/badge/Go-1.24%2B-blue)](https://golang.org/)
 [![Fyne](https://img.shields.io/badge/Fyne-v2.7.1-purple)](https://fyne.io/)
 [![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-lightgrey)](https://github.com/fyne-io/fyne)
 
@@ -26,10 +26,6 @@
 | [AkiraBox.com](https://akirabox.com) | ✅ Ready | [API Docs](https://akirabox.com/api) |
 | [FileKeeper.net](https://filekeeper.net) | ✅ Ready | [API Docs](https://datanodes.docs.apiary.io/) |
 
-## Screenshots
-
-*Screenshots will be added soon*
-
 ## Installation
 
 ### Download Pre-built Binary
@@ -39,7 +35,7 @@
 ### Build from Source
 
 **Requirements:**
-- Go 1.25 or higher
+- Go 1.24 or higher
 - Internet connection (for dependencies)
 
 **Build steps:**
@@ -135,6 +131,7 @@ Settings are stored in platform-specific locations:
 ### Global Settings
 
 - **Theme** - Light, Dark, or Auto (system default)
+- **Language** - English, Russian, or Auto (system default)
 
 ### Provider Settings
 
@@ -276,47 +273,6 @@ HTTP connections are reused for better performance:
 
 This is especially beneficial for Rootz.so which makes 100+ requests for large files!
 
-### Chunked Upload
-
-For large files, the application automatically splits them into chunks:
-- **Default chunk size:** 5 MB
-- **Configurable** per provider or globally
-- **Progress tracking** per chunk
-- **Memory efficient** - doesn't load entire file into RAM
-
-## Project Structure
-
-```
-multiUploader/
-├── main.go                          # Entry point
-├── internal/
-│   ├── ui/
-│   │   ├── app.go                  # Application manager + menu
-│   │   ├── upload_tab.go           # Upload tab UI
-│   │   ├── settings_tab.go         # Settings tab UI
-│   │   └── errors.go               # Friendly error messages
-│   ├── providers/
-│   │   ├── provider.go             # Provider interface
-│   │   ├── progress.go             # Progress tracking
-│   │   ├── helpers.go              # Utilities
-│   │   ├── defaults.go             # Constants
-│   │   ├── rootz.go                # Rootz.so provider
-│   │   ├── datavaults.go           # DataVaults.co provider
-│   │   ├── akirabox.go             # AkiraBox.com provider
-│   │   ├── filekeeper.go           # FileKeeper.net provider
-│   │   └── mock.go                 # Mock provider for testing
-│   ├── config/
-│   │   └── config.go               # Configuration manager
-│   ├── httpclient/
-│   │   ├── client.go               # HTTP client with retry
-│   │   └── shared.go               # Shared HTTP clients
-│   └── logging/
-│       └── logger.go               # Structured logging (slog)
-├── go.mod                           # Go dependencies
-├── go.sum                           # Dependency checksums
-└── README.md                        # This file
-```
-
 ## Development
 
 ### Architecture
@@ -400,7 +356,7 @@ go test -run TestConfigManager ./internal/config
 
 ## Technology Stack
 
-- **Language:** Go 1.25+
+- **Language:** Go 1.24+
 - **GUI Framework:** [Fyne v2.7.1](https://fyne.io/)
 - **HTTP Retry:** [backoff/v4](https://github.com/cenkalti/backoff)
 - **Logging:** Go standard library `log/slog`
@@ -428,8 +384,7 @@ MIT License - see LICENSE file for details
 
 ## Support
 
-- **Issues:** [GitHub Issues](https://github.com/yourusername/multiUploader/issues)
-- **Documentation:** See [PLAN.md](PLAN.md) and [PROVIDERS.md](PROVIDERS.md)
+- **Issues:** [GitHub Issues](https://github.com/VerTox/multiUploader/issues)
 - **Logs:** Check `File → Open Logs Folder` for debugging
 
 ---

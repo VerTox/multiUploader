@@ -2,5 +2,5 @@
 Icon = "icon.png"
 Name = "multiUploader"
 ID = "com.vertox.multiuploader"
-Version = "1.0.1"
-Build = 1
+Version = "1.0.2"
+Build = 3

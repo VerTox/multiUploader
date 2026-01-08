@@ -3,6 +3,7 @@ package main
 import (
 	"fyne.io/fyne/v2/app"
 
+	"multiUploader/internal/localization"
 	"multiUploader/internal/logging"
 	"multiUploader/internal/providers"
 	"multiUploader/internal/ui"
@@ -18,6 +19,15 @@ func main() {
 
 	// Создаем Fyne приложение с уникальным ID для хранения настроек
 	fyneApp := app.NewWithID("com.github.vertox.multiuploader")
+
+	// Загружаем сохраненный язык из настроек (по умолчанию "auto")
+	savedLanguage := fyneApp.Preferences().StringWithFallback("language", "auto")
+
+	// Инициализируем систему локализации
+	if err := localization.Init(savedLanguage); err != nil {
+		// Если не удалось загрузить переводы, продолжаем с дефолтными значениями
+		logging.Error("Failed to initialize localization: %v", err)
+	}
 
 	// Создаем наше приложение
 	multiApp := ui.NewApp(fyneApp)

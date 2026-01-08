@@ -14,6 +14,7 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
+	"multiUploader/internal/localization"
 	"multiUploader/internal/logging"
 	"multiUploader/internal/providers"
 )
@@ -77,7 +78,7 @@ func NewUploadTab(app *App) *UploadTab {
 	tab.speedBinding.Set("")
 	tab.etaBinding.Set("")
 	tab.resultBinding.Set("")
-	tab.uploadBtnBinding.Set("Upload")
+	tab.uploadBtnBinding.Set(localization.T("Start Upload"))
 
 	return tab
 }
@@ -85,15 +86,15 @@ func NewUploadTab(app *App) *UploadTab {
 // Build создает UI вкладки загрузки
 func (t *UploadTab) Build() fyne.CanvasObject {
 	// Выбор провайдера
-	providerLabel := widget.NewLabel("Provider:")
+	providerLabel := widget.NewLabel(localization.T("Select Providers"))
 	t.providerSelect = widget.NewSelect([]string{}, func(selected string) {
 		t.selectedProvider = selected
 		t.updateUploadButton()
 	})
 
 	// Кнопка выбора файла
-	t.filePathLabel = widget.NewLabel("No file selected")
-	t.selectFileBtn = widget.NewButton("Select File", t.onSelectFile)
+	t.filePathLabel = widget.NewLabel(localization.T("No file selected"))
+	t.selectFileBtn = widget.NewButton(localization.T("Select File"), t.onSelectFile)
 
 	// Progress bar и информация о прогрессе
 	t.progressBar = widget.NewProgressBarWithData(t.progressBinding)
@@ -138,7 +139,7 @@ func (t *UploadTab) Build() fyne.CanvasObject {
 	)
 
 	content := container.NewVBox(
-		widget.NewLabel("Upload File to Hosting"),
+		widget.NewLabel(localization.T("Upload")),
 		widget.NewSeparator(),
 		providerRow,
 		fileRow,
@@ -222,7 +223,7 @@ func (t *UploadTab) onUpload() {
 // startUpload начинает процесс загрузки
 func (t *UploadTab) startUpload() {
 	t.isUploading = true
-	t.uploadBtn.SetText("Cancel")
+	t.uploadBtn.SetText(localization.T("Cancel"))
 	t.resultBinding.Set("")
 
 	// Показываем элементы прогресса
@@ -233,7 +234,7 @@ func (t *UploadTab) startUpload() {
 
 	// Используем binding для инициализации
 	t.progressBinding.Set(0)
-	t.uploadedBinding.Set("Uploaded: 0 B / 0 B")
+	t.uploadedBinding.Set(localization.T("Uploading..."))
 	t.speedBinding.Set("Speed: calculating...")
 	t.etaBinding.Set("ETA: calculating...")
 
@@ -386,8 +387,8 @@ func (t *UploadTab) finishUpload(err error) {
 
 		// Отправляем уведомление об ошибке
 		t.app.SendNotification(
-			"Upload Failed",
-			fmt.Sprintf("%s - Check logs for details", t.selectedFile.Name()),
+			localization.T("Upload Failed"),
+			fmt.Sprintf("%s - %s", t.selectedFile.Name(), localization.T("Check logs for details")),
 		)
 
 		// Показываем дружественное сообщение об ошибке
@@ -395,7 +396,7 @@ func (t *UploadTab) finishUpload(err error) {
 	}
 
 	fyne.Do(func() {
-		t.uploadBtn.SetText("Upload")
+		t.uploadBtn.SetText(localization.T("Start Upload"))
 		t.progressBar.Hide()
 		t.uploadedLabel.Hide()
 		t.speedLabel.Hide()
@@ -411,7 +412,7 @@ func (t *UploadTab) showResult(result *providers.UploadResult) {
 
 	// Отправляем уведомление об успехе
 	t.app.SendNotification(
-		"Upload Complete",
+		localization.T("Upload Complete"),
 		fmt.Sprintf("%s uploaded to %s", t.selectedFile.Name(), t.selectedProvider),
 	)
 
@@ -419,7 +420,7 @@ func (t *UploadTab) showResult(result *providers.UploadResult) {
 	content := container.NewVBox()
 
 	// Добавляем сообщение об успехе
-	successLabel := widget.NewLabel("Upload successful!")
+	successLabel := widget.NewLabel(localization.T("Upload Complete") + "!")
 	successLabel.TextStyle = fyne.TextStyle{Bold: true}
 	content.Add(successLabel)
 
@@ -436,10 +437,10 @@ func (t *UploadTab) showResult(result *providers.UploadResult) {
 		//urlEntry.Disable() // Disable делает его read-only но позволяет выделять текст
 
 		// Кнопка копирования
-		copyBtn := widget.NewButton("Copy", func() {
+		copyBtn := widget.NewButton(localization.T("Copy"), func() {
 			t.app.MainWindow().Clipboard().SetContent(url)
 			// Можно добавить уведомление
-			dialog.ShowInformation("Copied", "URL copied to clipboard!", t.app.MainWindow())
+			dialog.ShowInformation(localization.T("Copied to clipboard"), localization.T("Link copied"), t.app.MainWindow())
 		})
 
 		copyBtn.SetIcon(theme.ContentCopyIcon())
@@ -478,7 +479,7 @@ func (t *UploadTab) showResult(result *providers.UploadResult) {
 	}
 
 	// Показываем кастомный диалог
-	d := dialog.NewCustom("Upload Result", "Close", content, t.app.MainWindow())
+	d := dialog.NewCustom(localization.T("Upload Results"), "Close", content, t.app.MainWindow())
 	d.Resize(fyne.NewSize(600, 400))
 	d.Show()
 }

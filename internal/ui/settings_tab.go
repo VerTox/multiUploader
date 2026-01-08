@@ -8,6 +8,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"multiUploader/internal/config"
+	"multiUploader/internal/localization"
 	"multiUploader/internal/providers"
 )
 
@@ -17,6 +18,7 @@ type SettingsTab struct {
 
 	// Глобальные настройки
 	themeSelect            *widget.Select
+	languageSelect         *widget.Select
 	notificationRadioGroup *widget.RadioGroup
 
 	// Настройки провайдеров
@@ -53,8 +55,8 @@ func (t *SettingsTab) Build() fyne.CanvasObject {
 	providerSection := t.buildProviderSettings()
 
 	// Кнопки
-	t.saveBtn = widget.NewButton("Save Settings", t.onSave)
-	t.cancelBtn = widget.NewButton("Cancel", t.onCancel)
+	t.saveBtn = widget.NewButton(localization.T("Save Settings"), t.onSave)
+	t.cancelBtn = widget.NewButton(localization.T("Cancel"), t.onCancel)
 
 	// Кнопки в отдельном ряду
 	buttonRow := container.NewHBox(
@@ -65,7 +67,7 @@ func (t *SettingsTab) Build() fyne.CanvasObject {
 
 	// Скроллируемый контент (БЕЗ кнопок)
 	scrollContent := container.NewVBox(
-		widget.NewLabel("Settings"),
+		widget.NewLabel(localization.T("Settings")),
 		widget.NewSeparator(),
 		globalSection,
 		widget.NewSeparator(),
@@ -88,24 +90,37 @@ func (t *SettingsTab) Build() fyne.CanvasObject {
 // buildGlobalSettings создает секцию глобальных настроек
 func (t *SettingsTab) buildGlobalSettings() fyne.CanvasObject {
 	// Theme select
-	t.themeSelect = widget.NewSelect([]string{"auto", "light", "dark"}, nil)
-	themeLabel := widget.NewLabel("Theme:")
+	themeOptions := []string{
+		localization.T("auto"),
+		localization.T("light"),
+		localization.T("dark"),
+	}
+	t.themeSelect = widget.NewSelect(themeOptions, nil)
+	themeLabel := widget.NewLabel(localization.T("Theme:"))
 	themeRow := container.NewBorder(nil, nil, themeLabel, nil, t.themeSelect)
 
+	// Language select
+	t.languageSelect = widget.NewSelect(localization.GetAvailableLanguages(), nil)
+	languageLabel := widget.NewLabel(localization.T("Language:"))
+	languageRow := container.NewBorder(nil, nil, languageLabel, nil, t.languageSelect)
+
 	// Notification settings
-	t.notificationRadioGroup = widget.NewRadioGroup(
-		[]string{"Disabled", "Only when unfocused", "Always"},
-		nil,
-	)
-	notificationLabel := widget.NewLabel("Notifications:")
+	notificationOptions := []string{
+		localization.T("Disabled"),
+		localization.T("Only when unfocused"),
+		localization.T("Always"),
+	}
+	t.notificationRadioGroup = widget.NewRadioGroup(notificationOptions, nil)
+	notificationLabel := widget.NewLabel(localization.T("Notifications:"))
 	notificationBox := container.NewVBox(
 		notificationLabel,
 		t.notificationRadioGroup,
 	)
 
 	globalGroup := container.NewVBox(
-		widget.NewLabelWithStyle("Global Settings", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
+		widget.NewLabelWithStyle(localization.T("Global Settings"), fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
 		themeRow,
+		languageRow,
 		notificationBox,
 	)
 
@@ -115,7 +130,7 @@ func (t *SettingsTab) buildGlobalSettings() fyne.CanvasObject {
 // buildProviderSettings создает секцию настроек провайдеров
 func (t *SettingsTab) buildProviderSettings() fyne.CanvasObject {
 	providerBoxes := container.NewVBox(
-		widget.NewLabelWithStyle("Provider Settings", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
+		widget.NewLabelWithStyle(localization.T("Provider Settings"), fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
 	)
 
 	// Создаем форму для каждого провайдера
@@ -129,7 +144,7 @@ func (t *SettingsTab) buildProviderSettings() fyne.CanvasObject {
 		)
 
 		if provider.RequiresAuth() {
-			apiKeyLabel := widget.NewLabel("API Key:")
+			apiKeyLabel := widget.NewLabel(localization.T("API Key:"))
 			apiKeyRow := container.NewBorder(nil, nil, apiKeyLabel, nil, form.apiKeyEntry)
 			providerBox.Add(apiKeyRow)
 		}
@@ -146,12 +161,12 @@ func (t *SettingsTab) buildProviderSettings() fyne.CanvasObject {
 // createProviderForm создает форму настроек для провайдера
 func (t *SettingsTab) createProviderForm(provider providers.Provider) *ProviderSettingsForm {
 	form := &ProviderSettingsForm{
-		enabledCheck: widget.NewCheck("Enabled", nil),
+		enabledCheck: widget.NewCheck(localization.T("Enabled"), nil),
 		apiKeyEntry:  widget.NewEntry(),
 		statusLabel:  widget.NewLabel(""),
 	}
 
-	form.apiKeyEntry.SetPlaceHolder("Enter API key")
+	form.apiKeyEntry.SetPlaceHolder(localization.T("Enter API key"))
 
 	return form
 }
@@ -173,7 +188,13 @@ func (t *SettingsTab) loadSettings() {
 
 	// Загружаем глобальные настройки
 	globalCfg := cfg.GetGlobalConfig()
-	t.themeSelect.SetSelected(globalCfg.Theme)
+	// Переводим значение темы для UI
+	t.themeSelect.SetSelected(localization.T(globalCfg.Theme))
+
+	// Загружаем язык из preferences
+	savedLanguage := t.app.fyneApp.Preferences().StringWithFallback("language", "auto")
+	languageName := localization.LanguageCodeToName(savedLanguage)
+	t.languageSelect.SetSelected(languageName)
 
 	// Конвертируем NotificationMode в UI текст
 	notificationText := t.notificationModeToText(globalCfg.NotificationMode)
@@ -192,40 +213,66 @@ func (t *SettingsTab) loadSettings() {
 func (t *SettingsTab) notificationModeToText(mode config.NotificationMode) string {
 	switch mode {
 	case config.NotificationDisabled:
-		return "Disabled"
+		return localization.T("Disabled")
 	case config.NotificationUnfocused:
-		return "Only when unfocused"
+		return localization.T("Only when unfocused")
 	case config.NotificationAlways:
-		return "Always"
+		return localization.T("Always")
 	default:
-		return "Only when unfocused"
+		return localization.T("Only when unfocused")
 	}
 }
 
 // textToNotificationMode конвертирует UI текст в NotificationMode
 func (t *SettingsTab) textToNotificationMode(text string) config.NotificationMode {
-	switch text {
-	case "Disabled":
+	// Сравниваем с переведенными текстами
+	if text == localization.T("Disabled") {
 		return config.NotificationDisabled
-	case "Only when unfocused":
-		return config.NotificationUnfocused
-	case "Always":
-		return config.NotificationAlways
-	default:
+	}
+	if text == localization.T("Only when unfocused") {
 		return config.NotificationUnfocused
 	}
+	if text == localization.T("Always") {
+		return config.NotificationAlways
+	}
+	return config.NotificationUnfocused
+}
+
+// translatedThemeToCode конвертирует переведенное название темы в код
+func (t *SettingsTab) translatedThemeToCode(text string) string {
+	if text == localization.T("auto") {
+		return "auto"
+	}
+	if text == localization.T("light") {
+		return "light"
+	}
+	if text == localization.T("dark") {
+		return "dark"
+	}
+	return "auto"
 }
 
 // onSave обработчик сохранения настроек
 func (t *SettingsTab) onSave() {
 	cfg := t.app.Config()
 
+	// Проверяем, изменился ли язык
+	savedLanguage := t.app.fyneApp.Preferences().StringWithFallback("language", "auto")
+	newLanguageCode := localization.LanguageNameToCode(t.languageSelect.Selected)
+	languageChanged := savedLanguage != newLanguageCode
+
+	// Конвертируем выбранную тему обратно в код
+	themeCode := t.translatedThemeToCode(t.themeSelect.Selected)
+
 	// Сохраняем глобальные настройки
 	globalCfg := config.GlobalConfig{
-		Theme:            t.themeSelect.Selected,
+		Theme:            themeCode,
 		NotificationMode: t.textToNotificationMode(t.notificationRadioGroup.Selected),
 	}
 	cfg.SetGlobalConfig(globalCfg)
+
+	// Сохраняем язык в preferences
+	t.app.fyneApp.Preferences().SetString("language", newLanguageCode)
 
 	// Сохраняем настройки провайдеров
 	for name, form := range t.providerForms {
@@ -237,7 +284,14 @@ func (t *SettingsTab) onSave() {
 		cfg.SetProviderConfig(name, providerCfg)
 	}
 
-	dialog.ShowInformation("Success", "Settings saved successfully!", t.app.MainWindow())
+	// Показываем соответствующее сообщение
+	if languageChanged {
+		dialog.ShowInformation(localization.T("Language changed"),
+			localization.T("Please restart the application to apply language changes"),
+			t.app.MainWindow())
+	} else {
+		dialog.ShowInformation(localization.T("Success"), localization.T("Settings saved successfully!"), t.app.MainWindow())
+	}
 
 	// Применяем тему
 	t.app.ApplyTheme()
@@ -251,5 +305,5 @@ func (t *SettingsTab) onSave() {
 // onCancel обработчик отмены изменений
 func (t *SettingsTab) onCancel() {
 	t.loadSettings()
-	dialog.ShowInformation("Cancelled", "Changes discarded", t.app.MainWindow())
+	dialog.ShowInformation(localization.T("Cancelled"), localization.T("Changes discarded"), t.app.MainWindow())
 }

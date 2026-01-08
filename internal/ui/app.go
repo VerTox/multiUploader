@@ -13,6 +13,7 @@ import (
 	"fyne.io/fyne/v2/theme"
 
 	"multiUploader/internal/config"
+	"multiUploader/internal/localization"
 	"multiUploader/internal/logging"
 	"multiUploader/internal/providers"
 	"multiUploader/internal/updater"
@@ -94,8 +95,8 @@ func (a *App) Build() {
 
 	// Создаем контейнер с вкладками
 	tabs := container.NewAppTabs(
-		container.NewTabItem("Upload", a.uploadTab.Build()),
-		container.NewTabItem("Settings", a.settingsTab.Build()),
+		container.NewTabItem(localization.T("Upload"), a.uploadTab.Build()),
+		container.NewTabItem(localization.T("Settings"), a.settingsTab.Build()),
 	)
 
 	// Устанавливаем содержимое окна
@@ -148,28 +149,28 @@ func (a *App) ApplyTheme() {
 // buildMenu создает главное меню приложения
 func (a *App) buildMenu() *fyne.MainMenu {
 	// File menu
-	openLogsItem := fyne.NewMenuItem("Open Logs Folder", func() {
+	openLogsItem := fyne.NewMenuItem(localization.T("Open Logs Folder"), func() {
 		a.openLogsFolder()
 	})
 
-	fileMenu := fyne.NewMenu("File",
+	fileMenu := fyne.NewMenu(localization.T("File"),
 		openLogsItem,
 		fyne.NewMenuItemSeparator(),
-		fyne.NewMenuItem("Quit", func() {
+		fyne.NewMenuItem(localization.T("Quit"), func() {
 			a.fyneApp.Quit()
 		}),
 	)
 
 	// Help menu
-	checkUpdatesItem := fyne.NewMenuItem("Check for Updates...", func() {
+	checkUpdatesItem := fyne.NewMenuItem(localization.T("Check for Updates..."), func() {
 		go a.checkForUpdates(true) // true = показывать сообщение даже если обновлений нет
 	})
 
-	aboutItem := fyne.NewMenuItem("About", func() {
+	aboutItem := fyne.NewMenuItem(localization.T("About"), func() {
 		a.showAboutDialog()
 	})
 
-	helpMenu := fyne.NewMenu("Help", checkUpdatesItem, aboutItem)
+	helpMenu := fyne.NewMenu(localization.T("Help"), checkUpdatesItem, aboutItem)
 
 	return fyne.NewMainMenu(fileMenu, helpMenu)
 }
@@ -178,8 +179,8 @@ func (a *App) buildMenu() *fyne.MainMenu {
 func (a *App) openLogsFolder() {
 	logDir := logging.GetLogDir()
 	if logDir == "" {
-		dialog.ShowInformation("Logs Not Found",
-			"Could not determine logs location.",
+		dialog.ShowInformation(localization.T("Logs Not Found"),
+			localization.T("Could not determine logs location."),
 			a.mainWindow)
 		return
 	}
@@ -188,8 +189,8 @@ func (a *App) openLogsFolder() {
 	if _, err := os.Stat(logDir); os.IsNotExist(err) {
 		// Пытаемся создать
 		if err := os.MkdirAll(logDir, 0755); err != nil {
-			dialog.ShowInformation("Error",
-				"Could not create logs directory:\n"+err.Error(),
+			dialog.ShowInformation(localization.T("Error"),
+				localization.T("Could not create logs directory:")+"\n"+err.Error(),
 				a.mainWindow)
 			return
 		}
@@ -209,8 +210,8 @@ func (a *App) openLogsFolder() {
 
 	if err := cmd.Start(); err != nil {
 		// Если не удалось открыть, показываем путь
-		dialog.ShowInformation("Logs Location",
-			"Could not open folder automatically.\n\nLogs are located at:\n"+logDir,
+		dialog.ShowInformation(localization.T("Logs Location"),
+			localization.T("Could not open folder automatically.")+"\n\n"+localization.T("Logs are located at:")+"\n"+logDir,
 			a.mainWindow)
 	}
 }
@@ -248,13 +249,15 @@ func (a *App) showAboutDialog() {
 	// Получаем метаданные приложения из FyneApp.toml
 	metadata := a.fyneApp.Metadata()
 
-	message := fmt.Sprintf("%s v%s (Build %d)\n\nA cross-platform file uploader for multiple hosting services.\n\nCopyright © 2026",
+	message := fmt.Sprintf("%s v%s (Build %d)\n\n%s\n\n%s",
 		metadata.Name,
 		metadata.Version,
 		metadata.Build,
+		localization.T("A cross-platform file uploader for multiple hosting services."),
+		localization.T("Copyright © 2026"),
 	)
 
-	dialog.ShowInformation("About multiUploader", message, a.mainWindow)
+	dialog.ShowInformation(localization.T("About multiUploader"), message, a.mainWindow)
 }
 
 // checkForUpdates проверяет наличие новой версии на GitHub
@@ -279,8 +282,8 @@ func (a *App) checkForUpdates(showNoUpdateMessage bool) {
 		a.showUpdateDialog(release)
 	} else if showNoUpdateMessage {
 		// Обновлений нет, но пользователь запросил проверку вручную
-		dialog.ShowInformation("No Updates",
-			fmt.Sprintf("You are using the latest version (%s)", currentVersion),
+		dialog.ShowInformation(localization.T("No Updates"),
+			fmt.Sprintf(localization.T("You are using the latest version")+" (%s)", currentVersion),
 			a.mainWindow)
 	}
 }
@@ -289,13 +292,17 @@ func (a *App) checkForUpdates(showNoUpdateMessage bool) {
 func (a *App) showUpdateDialog(release *updater.ReleaseInfo) {
 	metadata := a.fyneApp.Metadata()
 
-	message := fmt.Sprintf("A new version is available!\n\nCurrent version: v%s\nNew version: %s\n\nWould you like to download it?",
+	message := fmt.Sprintf("%s\n\n%s v%s\n%s %s\n\n%s",
+		localization.T("A new version is available!"),
+		localization.T("Current version:"),
 		metadata.Version,
+		localization.T("New version:"),
 		release.TagName,
+		localization.T("Would you like to download it?"),
 	)
 
 	// Создаем custom dialog с кнопками
-	dialog.ShowConfirm("Update Available", message, func(download bool) {
+	dialog.ShowConfirm(localization.T("Update Available"), message, func(download bool) {
 		if download {
 			// Открываем страницу релиза в браузере
 			a.openURL(release.HTMLURL)
@@ -318,8 +325,8 @@ func (a *App) openURL(url string) {
 
 	if err := cmd.Start(); err != nil {
 		// Если не удалось открыть, показываем URL
-		dialog.ShowInformation("Download Link",
-			"Please visit:\n"+url,
+		dialog.ShowInformation(localization.T("Download Link"),
+			localization.T("Please visit:")+"\n"+url,
 			a.mainWindow)
 	}
 }
