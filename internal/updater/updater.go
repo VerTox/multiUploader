@@ -57,7 +57,7 @@ func CheckForUpdates(owner, repo, currentVersion string) (*ReleaseInfo, error) {
 	// TagName приходит в формате "v1.0.2", убираем "v"
 	latestVersion := strings.TrimPrefix(release.TagName, "v")
 
-	if CompareVersions(currentVersion, latestVersion) < 0 {
+	if CompareVersions(currentVersion, latestVersion) > 0 {
 		// Текущая версия старее - есть обновление
 		return &release, nil
 	}
