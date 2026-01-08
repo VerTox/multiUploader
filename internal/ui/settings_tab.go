@@ -6,6 +6,7 @@ import (
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
+
 	"multiUploader/internal/config"
 	"multiUploader/internal/providers"
 )
@@ -15,7 +16,8 @@ type SettingsTab struct {
 	app *App
 
 	// Глобальные настройки
-	themeSelect *widget.Select
+	themeSelect            *widget.Select
+	notificationRadioGroup *widget.RadioGroup
 
 	// Настройки провайдеров
 	providerForms map[string]*ProviderSettingsForm
@@ -90,9 +92,21 @@ func (t *SettingsTab) buildGlobalSettings() fyne.CanvasObject {
 	themeLabel := widget.NewLabel("Theme:")
 	themeRow := container.NewBorder(nil, nil, themeLabel, nil, t.themeSelect)
 
+	// Notification settings
+	t.notificationRadioGroup = widget.NewRadioGroup(
+		[]string{"Disabled", "Only when unfocused", "Always"},
+		nil,
+	)
+	notificationLabel := widget.NewLabel("Notifications:")
+	notificationBox := container.NewVBox(
+		notificationLabel,
+		t.notificationRadioGroup,
+	)
+
 	globalGroup := container.NewVBox(
 		widget.NewLabelWithStyle("Global Settings", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
 		themeRow,
+		notificationBox,
 	)
 
 	return globalGroup
@@ -161,6 +175,10 @@ func (t *SettingsTab) loadSettings() {
 	globalCfg := cfg.GetGlobalConfig()
 	t.themeSelect.SetSelected(globalCfg.Theme)
 
+	// Конвертируем NotificationMode в UI текст
+	notificationText := t.notificationModeToText(globalCfg.NotificationMode)
+	t.notificationRadioGroup.SetSelected(notificationText)
+
 	// Загружаем настройки провайдеров
 	for name, form := range t.providerForms {
 		providerCfg := cfg.GetProviderConfig(name)
@@ -170,13 +188,42 @@ func (t *SettingsTab) loadSettings() {
 	}
 }
 
+// notificationModeToText конвертирует NotificationMode в UI текст
+func (t *SettingsTab) notificationModeToText(mode config.NotificationMode) string {
+	switch mode {
+	case config.NotificationDisabled:
+		return "Disabled"
+	case config.NotificationUnfocused:
+		return "Only when unfocused"
+	case config.NotificationAlways:
+		return "Always"
+	default:
+		return "Only when unfocused"
+	}
+}
+
+// textToNotificationMode конвертирует UI текст в NotificationMode
+func (t *SettingsTab) textToNotificationMode(text string) config.NotificationMode {
+	switch text {
+	case "Disabled":
+		return config.NotificationDisabled
+	case "Only when unfocused":
+		return config.NotificationUnfocused
+	case "Always":
+		return config.NotificationAlways
+	default:
+		return config.NotificationUnfocused
+	}
+}
+
 // onSave обработчик сохранения настроек
 func (t *SettingsTab) onSave() {
 	cfg := t.app.Config()
 
 	// Сохраняем глобальные настройки
 	globalCfg := config.GlobalConfig{
-		Theme: t.themeSelect.Selected,
+		Theme:            t.themeSelect.Selected,
+		NotificationMode: t.textToNotificationMode(t.notificationRadioGroup.Selected),
 	}
 	cfg.SetGlobalConfig(globalCfg)
 

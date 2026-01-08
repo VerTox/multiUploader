@@ -384,6 +384,12 @@ func (t *UploadTab) finishUpload(err error) {
 			"filesize", t.totalSize,
 		)
 
+		// Отправляем уведомление об ошибке
+		t.app.SendNotification(
+			"Upload Failed",
+			fmt.Sprintf("%s - Check logs for details", t.selectedFile.Name()),
+		)
+
 		// Показываем дружественное сообщение об ошибке
 		t.showFriendlyError(err)
 	}
@@ -402,6 +408,12 @@ func (t *UploadTab) showResult(result *providers.UploadResult) {
 	if result == nil {
 		return
 	}
+
+	// Отправляем уведомление об успехе
+	t.app.SendNotification(
+		"Upload Complete",
+		fmt.Sprintf("%s uploaded to %s", t.selectedFile.Name(), t.selectedProvider),
+	)
 
 	// Создаем контейнер для результатов
 	content := container.NewVBox()

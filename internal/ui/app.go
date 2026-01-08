@@ -142,15 +142,6 @@ func (a *App) buildMenu() *fyne.MainMenu {
 		}),
 	)
 
-	// Help menu
-	//aboutItem := fyne.NewMenuItem("About", func() {
-	//	dialog.ShowInformation("About multiUploader",
-	//		"multiUploader v1.0.0\n\nA cross-platform file uploader for multiple hosting services.",
-	//		a.mainWindow)
-	//})
-
-	//helpMenu := fyne.NewMenu("Help", aboutItem)
-
 	return fyne.NewMainMenu(fileMenu)
 }
 
@@ -193,4 +184,32 @@ func (a *App) openLogsFolder() {
 			"Could not open folder automatically.\n\nLogs are located at:\n"+logDir,
 			a.mainWindow)
 	}
+}
+
+// SendNotification отправляет системное уведомление с учетом настроек и фокуса окна
+func (a *App) SendNotification(title, content string) {
+	// Получаем режим уведомлений из конфига
+	globalCfg := a.config.GetGlobalConfig()
+	mode := globalCfg.NotificationMode
+
+	// Если уведомления выключены, ничего не делаем
+	if mode == config.NotificationDisabled {
+		return
+	}
+
+	// Если режим "только когда не в фокусе", проверяем фокус окна
+	if mode == config.NotificationUnfocused {
+		// Проверяем есть ли у canvas элемент в фокусе
+		// Если canvas.Focused() != nil, значит окно активно и пользователь работает с ним
+		if a.mainWindow.Canvas().Focused() != nil {
+			// Окно в фокусе - не показываем уведомление
+			return
+		}
+	}
+
+	// Режим "always" или "unfocused" - отправляем уведомление
+	a.fyneApp.SendNotification(&fyne.Notification{
+		Title:   title,
+		Content: content,
+	})
 }

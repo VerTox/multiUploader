@@ -6,17 +6,33 @@ import (
 
 const (
 	// Ключи для глобальных настроек
-	keyTheme = "global.theme"
+	keyTheme            = "global.theme"
+	keyNotificationMode = "global.notification_mode"
 
 	// Префиксы для настроек провайдеров
 	prefixEnabled = ".enabled"
 	prefixAPIKey  = ".api_key"
 )
 
+// NotificationMode определяет режим показа уведомлений
+type NotificationMode string
+
+const (
+	// NotificationDisabled - уведомления отключены
+	NotificationDisabled NotificationMode = "disabled"
+	// NotificationUnfocused - уведомления только когда окно не в фокусе
+	NotificationUnfocused NotificationMode = "unfocused"
+	// NotificationAlways - уведомления всегда
+	NotificationAlways NotificationMode = "always"
+)
+
 // GlobalConfig содержит глобальные настройки приложения
 type GlobalConfig struct {
 	// Theme тема приложения: "light", "dark", "auto"
 	Theme string
+
+	// NotificationMode режим показа уведомлений
+	NotificationMode NotificationMode
 }
 
 // ProviderConfig содержит настройки для конкретного провайдера
@@ -43,15 +59,18 @@ func NewConfigManager(prefs fyne.Preferences) *ConfigManager {
 // GetGlobalConfig возвращает глобальные настройки
 func (c *ConfigManager) GetGlobalConfig() GlobalConfig {
 	theme := c.prefs.StringWithFallback(keyTheme, "auto")
+	notificationMode := c.prefs.StringWithFallback(keyNotificationMode, string(NotificationUnfocused))
 
 	return GlobalConfig{
-		Theme: theme,
+		Theme:            theme,
+		NotificationMode: NotificationMode(notificationMode),
 	}
 }
 
 // SetGlobalConfig сохраняет глобальные настройки
 func (c *ConfigManager) SetGlobalConfig(cfg GlobalConfig) {
 	c.prefs.SetString(keyTheme, cfg.Theme)
+	c.prefs.SetString(keyNotificationMode, string(cfg.NotificationMode))
 }
 
 // GetProviderConfig возвращает настройки для конкретного провайдера
