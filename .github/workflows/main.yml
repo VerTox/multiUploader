@@ -26,22 +26,29 @@ jobs:
 
     - name: Build Linux binary
       run: |
-        fyne-cross linux --arch amd64 --output "multiUploader"
+        fyne-cross linux --arch amd64
 
     - name: Build Windows binary
       run: |
-        fyne-cross windows --arch amd64 --output "multiUploader.exe"
+        fyne-cross windows --arch amd64
+
+    - name: Debug - List created files
+      run: |
+        echo "=== Linux files ==="
+        ls -lah fyne-cross/dist/linux-amd64/ || echo "Linux dir not found"
+        echo "=== Windows files ==="
+        ls -lah fyne-cross/dist/windows-amd64/ || echo "Windows dir not found"
 
     - name: Create Linux archive
       run: |
         cd fyne-cross/dist/linux-amd64/
-        tar -czf ../../../multiUploader-linux-amd64.tar.gz multiUploader
+        tar -czf ../../../multiUploader-linux-amd64.tar.gz *
         cd ../../..
 
     - name: Create Windows archive
       run: |
         cd fyne-cross/dist/windows-amd64/
-        zip -r ../../../multiUploader-windows-amd64.zip multiUploader.exe
+        zip -r ../../../multiUploader-windows-amd64.zip *
         cd ../../..
 
     - name: Create GitHub Release
