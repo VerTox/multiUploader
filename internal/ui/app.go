@@ -1,9 +1,11 @@
 package ui
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"runtime"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -13,6 +15,13 @@ import (
 	"multiUploader/internal/config"
 	"multiUploader/internal/logging"
 	"multiUploader/internal/providers"
+	"multiUploader/internal/updater"
+)
+
+const (
+	// GitHub repository для проверки обновлений
+	githubOwner = "VerTox"
+	githubRepo  = "multiUploader"
 )
 
 // ProviderFactory функция-фабрика для создания провайдера с API ключом
@@ -99,6 +108,15 @@ func (a *App) Run() {
 	a.ApplyTheme()
 
 	a.Build()
+
+	// Проверяем обновления в фоне после запуска окна (не блокируем UI)
+	go func() {
+		// Ждем 2 секунды чтобы окно успело полностью отобразиться
+		// (иначе диалог может появиться до готовности UI)
+		time.Sleep(2 * time.Second)
+		a.checkForUpdates(false) // false = не показывать сообщение если обновлений нет
+	}()
+
 	a.mainWindow.ShowAndRun()
 }
 
@@ -142,7 +160,18 @@ func (a *App) buildMenu() *fyne.MainMenu {
 		}),
 	)
 
-	return fyne.NewMainMenu(fileMenu)
+	// Help menu
+	checkUpdatesItem := fyne.NewMenuItem("Check for Updates...", func() {
+		go a.checkForUpdates(true) // true = показывать сообщение даже если обновлений нет
+	})
+
+	aboutItem := fyne.NewMenuItem("About", func() {
+		a.showAboutDialog()
+	})
+
+	helpMenu := fyne.NewMenu("Help", checkUpdatesItem, aboutItem)
+
+	return fyne.NewMainMenu(fileMenu, helpMenu)
 }
 
 // openLogsFolder открывает папку с логами в файловом менеджере (кроссплатформенно)
@@ -212,4 +241,85 @@ func (a *App) SendNotification(title, content string) {
 		Title:   title,
 		Content: content,
 	})
+}
+
+// showAboutDialog показывает диалог "О программе" с информацией о версии
+func (a *App) showAboutDialog() {
+	// Получаем метаданные приложения из FyneApp.toml
+	metadata := a.fyneApp.Metadata()
+
+	message := fmt.Sprintf("%s v%s (Build %d)\n\nA cross-platform file uploader for multiple hosting services.\n\nCopyright © 2026",
+		metadata.Name,
+		metadata.Version,
+		metadata.Build,
+	)
+
+	dialog.ShowInformation("About multiUploader", message, a.mainWindow)
+}
+
+// checkForUpdates проверяет наличие новой версии на GitHub
+// showNoUpdateMessage - если true, показывать сообщение даже если обновлений нет (для ручной проверки)
+func (a *App) checkForUpdates(showNoUpdateMessage bool) {
+	metadata := a.fyneApp.Metadata()
+	currentVersion := metadata.Version
+
+	// Проверяем обновления
+	release, err := updater.CheckForUpdates(githubOwner, githubRepo, currentVersion)
+
+	// Обновляем UI из горутины через fyne.Do
+	if err != nil {
+		if showNoUpdateMessage {
+			dialog.ShowError(fmt.Errorf("failed to check for updates: %w", err), a.mainWindow)
+		}
+		return
+	}
+
+	if release != nil {
+		// Есть новая версия - показываем диалог
+		a.showUpdateDialog(release)
+	} else if showNoUpdateMessage {
+		// Обновлений нет, но пользователь запросил проверку вручную
+		dialog.ShowInformation("No Updates",
+			fmt.Sprintf("You are using the latest version (%s)", currentVersion),
+			a.mainWindow)
+	}
+}
+
+// showUpdateDialog показывает диалог о доступности новой версии
+func (a *App) showUpdateDialog(release *updater.ReleaseInfo) {
+	metadata := a.fyneApp.Metadata()
+
+	message := fmt.Sprintf("A new version is available!\n\nCurrent version: v%s\nNew version: %s\n\nWould you like to download it?",
+		metadata.Version,
+		release.TagName,
+	)
+
+	// Создаем custom dialog с кнопками
+	dialog.ShowConfirm("Update Available", message, func(download bool) {
+		if download {
+			// Открываем страницу релиза в браузере
+			a.openURL(release.HTMLURL)
+		}
+	}, a.mainWindow)
+}
+
+// openURL открывает URL в браузере (кроссплатформенно)
+func (a *App) openURL(url string) {
+	var cmd *exec.Cmd
+
+	switch runtime.GOOS {
+	case "darwin": // macOS
+		cmd = exec.Command("open", url)
+	case "windows":
+		cmd = exec.Command("cmd", "/c", "start", url)
+	default: // Linux
+		cmd = exec.Command("xdg-open", url)
+	}
+
+	if err := cmd.Start(); err != nil {
+		// Если не удалось открыть, показываем URL
+		dialog.ShowInformation("Download Link",
+			"Please visit:\n"+url,
+			a.mainWindow)
+	}
 }
